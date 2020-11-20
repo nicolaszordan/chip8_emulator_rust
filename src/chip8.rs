@@ -6,10 +6,7 @@ use crate::keypad::Keypad;
 use crate::ram::RAM;
 
 use arrayvec::ArrayVec;
-
-use std::thread;
-use std::time::Duration;
-use std::sync::{Arc, Mutex};
+use std::{thread, time};
 
 type Registers = [u8; 16];
 
@@ -27,9 +24,8 @@ pub struct Chip8 {
 
     stack: ArrayVec<[u16; 16]>,
 
-    delay_timer: Arc<Mutex<u8>>,
-    sound_timer: Arc<Mutex<u8>>,
-
+    delay_timer: u8,
+    sound_timer: u8,
     // FIXME: cache random generator
 }
 
@@ -49,8 +45,8 @@ impl Chip8 {
             program_counter: 0,
             index_register: 0,
             stack: ArrayVec::new(),
-            delay_timer: Arc::new(Mutex::new(0)),
-            sound_timer: Arc::new(Mutex::new(0)),
+            delay_timer: 0,
+            sound_timer: 0,
         }
     }
 
@@ -71,36 +67,38 @@ impl Chip8 {
         self.program_counter = 0x200;
         self.index_register = 0;
         self.stack.clear();
-        *self.delay_timer.lock().unwrap() = 0; // FIXME: Ordering might be non optimal
-        *self.sound_timer.lock().unwrap() = 0; // FIXME: Ordering might be non optimal
+        self.delay_timer = 0;
+        self.sound_timer = 0;
         for (i, font) in FONT_SET.iter().enumerate() {
             self.ram.write8(i as u16, *font);
         }
     }
 
     pub fn run(&mut self) {
-        let timer = thread::spawn(|| {
-	    loop {
-        	thread::sleep(Duration::from_secs(1) / 60);
-
-		let mut delay_timer = self.delay_timer.lock().unwrap();
-        	if *delay_timer > 0 {
-        	    *delay_timer -= 1;
-        	}
-		let mut sound_timer = self.sound_timer.lock().unwrap();
-        	if *sound_timer > 0 {
-        	    *sound_timer -= 1;
-        	}
-            }
-	});
-
         loop {
-            let current_op = self.ram.read16(self.program_counter);
-            self.process_op(current_op);
+            for _ in 0..10 {
+                self.step();
+            }
+            self.decrement_timers();
+            // render
+            // update keypad
+            // sleep for remainder of frame
+            thread::sleep(time::Duration::from_secs(1) / 60);
         }
     }
 
-    fn decrement_timers(&mut self) {
+    pub fn step(&mut self) {
+        let current_op = self.ram.read16(self.program_counter);
+        self.process_op(current_op);
+    }
+
+    pub fn decrement_timers(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
     }
 
     fn process_op(&mut self, op: u16) {
