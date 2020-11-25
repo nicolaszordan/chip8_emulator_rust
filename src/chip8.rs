@@ -11,13 +11,13 @@ use std::{thread, time};
 type Registers = [u8; 16];
 
 pub struct Chip8 {
-    ram: RAM,
+    pub ram: RAM,
 
-    display: Display,
+    pub display: Display,
 
     registers: Registers,
 
-    keypad: Keypad,
+    pub keypad: Keypad,
 
     program_counter: u16,
     index_register: u16,
@@ -80,9 +80,6 @@ impl Chip8 {
                 self.step();
             }
             self.decrement_timers();
-            // render
-            // update keypad
-            // sleep for remainder of frame
             thread::sleep(time::Duration::from_secs(1) / 60);
         }
     }
@@ -263,11 +260,16 @@ impl Chip8 {
                     .write8(self.index_register + 2, self.registers[x] % 10);
             }
             // LD [I], Vx
-            (0xF, _, 0x5, 0x5) => self.ram.write(self.index_register, &self.registers[..x]),
+            (0xF, _, 0x5, 0x5) => self
+                .ram
+                .write(self.index_register, &self.registers[..x + 1]),
             // LD Vx, [I]
-            (0xF, _, 0x6, 0x5) => self.ram.read(self.index_register, &mut self.registers[..x]),
+            (0xF, _, 0x6, 0x5) => self
+                .ram
+                .read(self.index_register, &mut self.registers[..x + 1]),
 
-            (_, _, _, _) => panic!("unsupported opcode [opcode={:#06X}]", op),
+            // NOOP
+            (_, _, _, _) => (),
         }
     }
 }

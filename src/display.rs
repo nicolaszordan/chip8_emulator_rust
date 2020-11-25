@@ -3,8 +3,8 @@ pub enum DrawResult {
     NoOverwrite,
 }
 
-const WIDTH: usize = 64;
-const HEIGHT: usize = 32;
+pub const WIDTH: usize = 64;
+pub const HEIGHT: usize = 32;
 
 pub struct Display {
     memory: [u8; WIDTH * HEIGHT],
@@ -50,11 +50,11 @@ impl Display {
         res
     }
 
-    fn is_pixel_set(&self, x: usize, y: usize) -> bool {
+    pub fn is_pixel_set(&self, x: usize, y: usize) -> bool {
         self.memory[(x % WIDTH) + (y % HEIGHT) * WIDTH] == 1
     }
 
-    fn set_pixel(&mut self, x: usize, y: usize, state: bool) {
+    pub fn set_pixel(&mut self, x: usize, y: usize, state: bool) {
         self.memory[(x % WIDTH) + (y % HEIGHT) * WIDTH] = state as u8;
     }
 }
