@@ -72,7 +72,7 @@ impl Emulator {
     }
 
     fn chip8_frame(&mut self) {
-        for _ in 0..10 {
+        for _ in 0..16 {
             self.chip8.step();
         }
         self.chip8.decrement_timers();
